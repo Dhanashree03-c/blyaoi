@@ -1,4 +1,3 @@
-
 services:
   backend:
     build: ./backend
@@ -10,7 +9,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: http://localhost:8001
+        VITE_API_URL: ""
     ports:
       - "5174:80"
     depends_on:
