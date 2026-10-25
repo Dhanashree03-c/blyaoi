@@ -1,109 +1,101 @@
-# WindDesk — GB Wind Generation Forecast Analysis
+# WindDesk — GB Wind Generation Forecast Analysis & Market Intelligence
 
 ## Overview
 
-WindDesk is a data analysis dashboard for exploring Great Britain’s wind generation forecasts and comparing them with actual generation. It uses data from the Elexon BMRS API to help users examine forecast accuracy for January 2026.
+WindDesk is a professional data analysis and trading dispatch dashboard for exploring Great Britain’s national wind generation forecasts and comparing them with actual metered generation. It integrates data from the Elexon BMRS API (FUELHH and WINDFOR streams) for January 2026, offering energy market participants, utilities, and analysts deep visibility into day-ahead forecast accuracy and financial imbalance exposure.
 
-The dashboard allows users to select a delivery date and forecast publication cutoff, inspect hourly forecast-versus-actual generation, and review forecast accuracy metrics.
+## Key Features
 
-## Features
+- **Automated Upstream Connection & Proxy**: Seamless Vite proxy routing (`/api`) eliminating cross-origin (CORS) errors in local development and container deployments.
+- **Resilient Fallback & Offline Simulation**: Automatically falls back to high-fidelity simulated GB benchmark data if the backend is offline or Elexon upstream is unreachable.
+- **Comprehensive Accuracy Metrics**: Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), Forecast Directional Bias, Weighted Absolute Percentage Error (WAPE), Model Fit ($R^2$), and Maximum Absolute Deviation.
+- **Multi-Cutoff Horizon Analysis**: Compare 4 forecast publication vintages (06:00 D-2, 10:00 Day-Ahead, 14:00 Afternoon, 17:00 Gate Closure) to observe forecast convergence as delivery approaches.
+- **Market Imbalance & Financial Exposure**: Calculate net MWh surplus/deficit, gross over/under-generation, and simulate GBP (£) cashout settlement risk with an interactive System Imbalance Price slider.
+- **Interactive Multi-View Charts**:
+  - Dual line profile (Forecast vs Actual with smooth curves)
+  - Hourly error delta bar chart (positive/negative color coded)
+  - Absolute error uncertainty area envelope
+  - Hour-over-hour ramp rate comparison
+- **Hourly Interval Registry & Export**:
+  - Searchable and filterable 24-hour interval table (filter by Over-forecast, Under-forecast, or High Deviation)
+  - One-click **Export to CSV** and **Export to JSON**
+  - One-click copy table to clipboard
+- **Trading Desk Aesthetics**: Dark/Light mode theme toggle, date presets (Storm Surge, Dunkelflaute, Cold Front), and connection diagnostic modal.
 
-- Retrieve actual wind generation data from the Elexon BMRS API.
-- Retrieve wind generation forecasts using a selected publication cutoff.
-- Select the latest eligible forecast for each delivery interval to avoid using information published after the cutoff.
-- Compare hourly forecast and actual generation.
-- Calculate Mean Absolute Error (MAE), Root Mean Squared Error (RMSE), forecast bias, and Weighted Absolute Percentage Error (WAPE).
-- View interval-level results and missing-data counts.
+---
 
 ## Technology Stack
 
 **Frontend**
-- React
-- Vite
+- React 19
+- Vite 6/8 with reverse proxy
 - Recharts
 - Lucide React
 
 **Backend**
-- Python
-- FastAPI
+- Python 3.11+
+- FastAPI & Starlette
+- Uvicorn (ASGI)
+- HTTPX async client
 - Elexon BMRS API
 
 **Containerization**
-- Dockerfiles for frontend and backend
-- Docker Compose configuration
+- Docker & Docker Compose
 
-## Project Structure
-
-```text
-WindDesk/
-├── backend/
-│   ├── app/
-│   │   └── main.py
-│   ├── requirements.txt
-│   └── Dockerfile
-├── frontend/
-│   ├── src/
-│   ├── package.json
-│   ├── Dockerfile
-│   └── .dockerignore
-├── docker-compose.yml
-├── .gitignore
-└── README.md
-```
+---
 
 ## Run Locally
 
-### Backend
+### 1. Run Backend (FastAPI)
 
-Open a terminal in the `backend` directory, create and activate a Python virtual environment if needed, and install the dependencies:
+Open a terminal in the `backend` directory:
 
 ```bash
+cd backend
+# Activate virtual environment if available:
+# Windows PowerShell:
+.\.venv\Scripts\Activate.ps1
+
+# Install requirements
 pip install -r requirements.txt
+
+# Start backend on port 8001
 uvicorn app.main:app --reload --port 8001
 ```
 
-API documentation:
+- API Docs: [http://localhost:8001/docs](http://localhost:8001/docs)
+- Health Check: [http://localhost:8001/api/health](http://localhost:8001/api/health)
 
-http://localhost:8001/docs
-
-Health check:
-
-http://localhost:8001/api/health
-
-### Frontend
+### 2. Run Frontend (Vite)
 
 Open a separate terminal in the `frontend` directory:
 
 ```bash
+cd frontend
 npm install
-npm run dev -- --port 5174
+npm run dev
 ```
 
-Open the dashboard at:
+Open your browser at:
+**[http://localhost:5174](http://localhost:5174)**
 
-http://localhost:5174
+> **Note on Vite Proxy:** The Vite development server automatically proxies all `/api/*` requests directly to `http://127.0.0.1:8001`. You can configure a different backend via `VITE_API_URL` or directly in the UI via the topbar Connection Settings modal.
 
-Configure `VITE_API_URL` to point to the backend API when running or deploying the frontend.
+---
 
-## Data Source
+## Docker Compose
 
-Elexon BMRS API:
+To run the entire stack (FastAPI backend + Nginx-hosted React frontend) via Docker:
 
-- Actual generation: https://data.elexon.co.uk/bmrs/api/v1/datasets/FUELHH/stream
-- Wind generation forecasts: https://data.elexon.co.uk/bmrs/api/v1/datasets/WINDFOR/stream
+```bash
+docker-compose up --build
+```
 
-## Methodology and Limitations
+Dashboard will be accessible at `http://localhost:5174`.
 
-Forecasts are selected according to the chosen publication cutoff. Forecast accuracy metrics are calculated only for matched forecast and actual intervals.
+---
 
-The cutoff is a configurable analytical assumption and should not be interpreted as a confirmed market procurement deadline without further validation. Wind forecast error alone does not determine a utility’s total electricity procurement requirement; demand, prices, other generation, imports, storage, and market arrangements also matter.
+## Data Sources
 
-Generation units and interval aggregation should be interpreted according to the source dataset definitions.
-
-## Deployment
-
-Deployment URL: To be added.
-
-## AI Tool Usage
-
-AI tools were used to assist with development, debugging, implementation guidance, and documentation. The final code and analysis should be reviewed and validated by the project author.
+- **Actual Metered Generation**: Elexon BMRS `FUELHH` dataset stream (`fuelType=WIND`)
+- **Wind Forecasts**: Elexon BMRS `WINDFOR` dataset stream
